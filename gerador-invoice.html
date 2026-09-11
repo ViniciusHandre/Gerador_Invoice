@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de Documento</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --wood: #6b4423;
+    --wood-dark: #4a2f18;
+    --paper: #fdfaf5;
+    --line: #d8cfc0;
+    --ink: #2b2118;
+    --accent: #a8703f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #efe8dc;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    color: var(--ink);
+    padding: 20px 14px 60px;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  h1 {
+    font-size: 1.3rem;
+    margin: 0 0 4px;
+    color: var(--wood-dark);
+    letter-spacing: 0.3px;
+  }
+  .sub {
+    font-size: 0.85rem;
+    color: #7a6d5c;
+    margin-bottom: 20px;
+  }
+  .card {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 18px 16px;
+    margin-bottom: 16px;
+  }
+  .card h2 {
+    font-size: 0.95rem;
+    margin: 0 0 12px;
+    color: var(--wood);
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 8px;
+  }
+  label {
+    display: block;
+    font-size: 0.78rem;
+    color: #7a6d5c;
+    margin-bottom: 3px;
+    margin-top: 10px;
+  }
+  input[type=text], input[type=date], input[type=number], textarea {
+    width: 100%;
+    padding: 9px 10px;
+    font-size: 0.95rem;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    font-family: inherit;
+    background: #fff;
+    color: var(--ink);
+  }
+  .row2 { display: flex; gap: 10px; }
+  .row2 > div { flex: 1; }
+  .item-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--line);
+  }
+  .item-row:first-of-type { border-top: none; padding-top: 0; }
+  .item-row .desc { flex: 2; }
+  .item-row .amt { flex: 1; }
+  .item-row button {
+    background: none;
+    border: 1px solid var(--line);
+    color: #a33;
+    border-radius: 4px;
+    padding: 9px 10px;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+  .add-btn {
+    margin-top: 12px;
+    background: none;
+    border: 1px dashed var(--accent);
+    color: var(--accent);
+    border-radius: 4px;
+    padding: 9px 14px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    width: 100%;
+  }
+  .total-line {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 2px solid var(--wood);
+    font-size: 1.05rem;
+    font-weight: bold;
+    color: var(--wood-dark);
+  }
+  .generate-btn {
+    width: 100%;
+    padding: 15px;
+    font-size: 1rem;
+    background: var(--wood);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.3px;
+  }
+  .generate-btn:active { background: var(--wood-dark); }
+  .hint {
+    font-size: 0.75rem;
+    color: #97897a;
+    margin-top: 8px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Gerador de Documento de Pagamento</h1>
+  <div class="sub">Preenche os dados abaixo e gera o PDF na hora — sem precisar abrir o Canva.</div>
+
+  <div class="card">
+    <h2>Dados da sua empresa</h2>
+    <label>Nome da empresa</label>
+    <input type="text" id="companyName" value="JR HARDWOOD FLOORING LLC">
+    <label>Endereço</label>
+    <input type="text" id="companyAddr" value="22 2nd ave #7, Danbury, ct 06810">
+    <label>Telefone</label>
+    <input type="text" id="companyPhone" value="+1 (203) 512-5171">
+  </div>
+
+  <div class="card">
+    <h2>Dados do documento</h2>
+    <div class="row2">
+      <div>
+        <label>Número</label>
+        <input type="text" id="invNumber" value="1">
+      </div>
+      <div>
+        <label>Data</label>
+        <input type="date" id="invDate">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Cobrar de (empresa / cliente)</h2>
+    <label>Nome</label>
+    <input type="text" id="billName" placeholder="Ex: Strongwater Restoration">
+    <label>Endereço</label>
+    <input type="text" id="billAddr" placeholder="Ex: 266 harristown rd, Glen Rock, NJ">
+  </div>
+
+  <div class="card">
+    <h2>Itens</h2>
+    <div id="itemsContainer"></div>
+    <button class="add-btn" onclick="addItem()">+ Adicionar item</button>
+    <div class="total-line">
+      <span>Total</span>
+      <span id="totalDisplay">$ 0,00</span>
+    </div>
+  </div>
+
+  <button class="generate-btn" onclick="generatePDF()">Gerar PDF</button>
+  <div class="hint">O PDF baixa direto no seu celular, pronto pra mandar no WhatsApp.</div>
+</div>
+
+<script>
+let itemCount = 0;
+
+function addItem(desc = '', amt = '') {
+  itemCount++;
+  const id = itemCount;
+  const div = document.createElement('div');
+  div.className = 'item-row';
+  div.id = 'item-' + id;
+  div.innerHTML = `
+    <div class="desc">
+      <label>Descrição</label>
+      <input type="text" id="desc-${id}" value="${desc}" placeholder="Ex: Total labor">
+    </div>
+    <div class="amt">
+      <label>Valor ($)</label>
+      <input type="number" id="amt-${id}" value="${amt}" step="0.01" oninput="updateTotal()">
+    </div>
+    <button onclick="removeItem(${id})">✕</button>
+  `;
+  document.getElementById('itemsContainer').appendChild(div);
+  updateTotal();
+}
+
+function removeItem(id) {
+  const el = document.getElementById('item-' + id);
+  if (el) el.remove();
+  updateTotal();
+}
+
+function updateTotal() {
+  const amounts = document.querySelectorAll('[id^="amt-"]');
+  let total = 0;
+  amounts.forEach(inp => { total += parseFloat(inp.value) || 0; });
+  document.getElementById('totalDisplay').textContent = '$ ' + total.toFixed(2).replace('.', ',');
+}
+
+function formatDateBR(isoDate) {
+  if (!isoDate) return '';
+  const [y, m, d] = isoDate.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function generatePDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+
+  const companyName = document.getElementById('companyName').value;
+  const companyAddr = document.getElementById('companyAddr').value;
+  const companyPhone = document.getElementById('companyPhone').value;
+  const invNumber = document.getElementById('invNumber').value;
+  const invDate = formatDateBR(document.getElementById('invDate').value);
+  const billName = document.getElementById('billName').value;
+  const billAddr = document.getElementById('billAddr').value;
+
+  let y = 60;
+  const left = 50;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text(companyName, left, y);
+
+  doc.setFontSize(22);
+  doc.setTextColor(120, 140, 160);
+  doc.text('INVOICE', 400, y);
+  doc.setTextColor(0, 0, 0);
+
+  y += 20;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.text(companyAddr, left, y);
+  y += 14;
+  doc.text('Phone: ' + companyPhone, left, y);
+
+  y += 30;
+  doc.setFontSize(10);
+  doc.setFillColor(200, 210, 225);
+  doc.rect(350, y - 12, 90, 20, 'F');
+  doc.rect(440, y - 12, 90, 20, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.text('INVOICE #', 355, y + 2);
+  doc.text('DATE', 445, y + 2);
+  doc.setFont('helvetica', 'normal');
+  doc.text(invNumber, 355, y + 22);
+  doc.text(invDate, 445, y + 22);
+
+  y += 55;
+  doc.setFillColor(200, 210, 225);
+  doc.rect(left, y - 14, 150, 20, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.text('BILL TO', left + 5, y);
+  y += 20;
+  doc.setFont('helvetica', 'normal');
+  doc.text(billName, left + 15, y);
+  y += 14;
+  doc.text(billAddr, left + 15, y);
+
+  y += 30;
+  doc.setFillColor(210, 216, 225);
+  doc.rect(left, y - 14, 400, 20, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.text('DESCRIPTION', left + 5, y);
+  doc.text('AMOUNT', left + 320, y);
+  y += 18;
+  doc.setDrawColor(180, 180, 180);
+  doc.line(left, y - 8, left + 400, y - 8);
+
+  doc.setFont('helvetica', 'normal');
+  let total = 0;
+  const descInputs = document.querySelectorAll('[id^="desc-"]');
+  descInputs.forEach(inp => {
+    const id = inp.id.split('-')[1];
+    const desc = inp.value;
+    const amt = parseFloat(document.getElementById('amt-' + id).value) || 0;
+    total += amt;
+    doc.text(desc, left + 5, y);
+    doc.text('$ ' + amt.toFixed(2).replace('.', ','), left + 320, y);
+    y += 20;
+  });
+
+  y += 10;
+  doc.line(left, y - 8, left + 400, y - 8);
+  doc.setFont('helvetica', 'bold');
+  doc.text('TOTAL', left + 5, y + 6);
+  doc.text('$ ' + total.toFixed(2).replace('.', ','), left + 320, y + 6);
+
+  doc.save(`invoice-${invNumber || 'documento'}.pdf`);
+}
+
+// init
+document.getElementById('invDate').valueAsDate = new Date();
+addItem('Total labor', '');
+</script>
+</body>
+</html>
